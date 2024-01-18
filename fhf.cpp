@@ -17,7 +17,18 @@ bool createDirectory(const fs::path& dir) {
 }
 
 bool isScreenshot(const string& filename) {
-  return filename.rfind("Screenshot", 0) == 0;
+  // Check for 'Screenshot (n).png' pattern, which is the usual one
+  if (filename.rfind("Screenshot (", 0) == 0 &&
+      filename.find(").png") != string::npos) {
+    return true;
+  }
+
+  // Capture is used for Snipping Tool
+  if (filename.rfind("Capture", 0) == 0) {
+    return true;
+  }
+
+  return false;
 }
 
 void moveFileToDirectory(const fs::path& file, const fs::path& targetDir,
@@ -26,9 +37,7 @@ void moveFileToDirectory(const fs::path& file, const fs::path& targetDir,
     fs::path destination = targetDir / file.filename();
     fs::rename(file, destination);
     if (makeNoise) {
-      string command =
-          "afplay " +
-          noise;  // No need to use '../', sound files are in the same directory
+      string command = "cmd /c start " + noise;  // Windows uses this instead
       system(command.c_str());
     }
     cout << "Moved: " << file.filename() << endl;
@@ -63,8 +72,7 @@ int main() {
       return 1;
     }
 
-    for (const auto& entry :
-         fs::directory_iterator(fs::current_path().parent_path())) {
+    for (const auto& entry : fs::directory_iterator(fs::current_path())) {
       if (entry.is_regular_file() &&
           isScreenshot(entry.path().filename().string())) {
         moveFileToDirectory(entry.path(), targetDir, makeNoise, noise);
